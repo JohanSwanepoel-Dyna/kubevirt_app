@@ -160,16 +160,24 @@ export const VMs = () => {
 | fields name, id`,
   });
 
-  // KubeVirt PVCs keyed by VMI name
-  const pvcResult = useDql({
+  // Parse pod k8s.object to extract persistentVolumeClaim.claimName from volumes
+  const podPvcResult = useDql({
     query: [
-      'smartscapeNodes K8S_PERSISTENTVOLUMECLAIM',
-      '| filter isNotNull(`tags:k8s.annotations`[`cdi.kubevirt.io/createdForDataVolume`])',
-      '| fieldsAdd pvc_type = `tags:k8s.annotations`[`cdi.kubevirt.io/storage.contentType`]',
-      '| filter pvc_type == "kubevirt"',
-      '| fieldsAdd vmi = `tags:k8s.annotations`[`cdi.kubevirt.io/createdForVMI`]',
-      '| fields name, k8s.namespace.name, vmi',
+      'smartscapeNodes K8S_POD',
+      '| filter `tags:k8s.labels`[kubevirt.io] == "virt-launcher"',
+      '| filter isNull(k8s.pod.deletion_timestamp)',
+      '| filter in(k8s.pod.phase, "Running", "Pending", "Unknown")',
+      '| parse k8s.object, "JSON:podConfig"',
+      '| fieldsAdd volumes = podConfig[`spec`][`volumes`]',
+      '| expand vol = volumes',
+      '| filter isNotNull(vol[`persistentVolumeClaim`][`claimName`])',
+      '| summarize pvcNames = collectDistinct(vol[`persistentVolumeClaim`][`claimName`]), by: {k8s.pod.name, k8s.namespace.name}',
     ].join('\n'),
+  });
+
+  // All PVC smartscape nodes (for entity IDs → Smartscape links)
+  const allPvcsResult = useDql({
+    query: 'smartscapeNodes K8S_PERSISTENTVOLUMECLAIM | fields pvc_id = id, pvc_name = name, namespace = k8s.namespace.name',
   });
 
   // Merge: pods (primary) + log counts (enrichment)
@@ -266,14 +274,23 @@ export const VMs = () => {
     guestVMMap.set((g.name ?? "").toLowerCase(), g.id);
   });
 
-  // Group PVCs by VMI name
-  type PVCRec = { name: string; "k8s.namespace.name": string; vmi: string };
-  const pvcsByVMI = new Map<string, string[]>();
-  ((pvcResult.data?.records ?? []) as PVCRec[]).forEach((p) => {
-    const key = p.vmi ?? "";
-    if (!key) return;
-    if (!pvcsByVMI.has(key)) pvcsByVMI.set(key, []);
-    pvcsByVMI.get(key)!.push(p.name);
+  // Build PVC entity ID map: "namespace/pvcName" → pvc_id
+  type AllPVCRec = { pvc_id: string; pvc_name: string; namespace: string };
+  const pvcEntityMap = new Map<string, string>();
+  ((allPvcsResult.data?.records ?? []) as AllPVCRec[]).forEach((p) => {
+    if (p.pvc_name && p.namespace) pvcEntityMap.set(`${p.namespace}/${p.pvc_name}`, p.pvc_id);
+  });
+
+  // Build PVC claim names per pod: podName → [{claimName, pvcId}]
+  type PodPVCRec = { "k8s.pod.name": string; "k8s.namespace.name": string; pvcNames: string[] };
+  const pvcsByPod = new Map<string, Array<{ claimName: string; pvcId: string | null }>>();
+  ((podPvcResult.data?.records ?? []) as PodPVCRec[]).forEach((p) => {
+    const names = Array.isArray(p.pvcNames) ? p.pvcNames : (p.pvcNames ? [p.pvcNames as unknown as string] : []);
+    const ns = p["k8s.namespace.name"] ?? "";
+    pvcsByPod.set(p["k8s.pod.name"], names.map((claimName) => ({
+      claimName,
+      pvcId: pvcEntityMap.get(`${ns}/${claimName}`) ?? null,
+    })));
   });
 
   const columns: DataTableColumnDef<VMRecord>[] = [
@@ -463,33 +480,56 @@ export const VMs = () => {
     {
       id: "pvcs",
       header: "Bound PVCs",
-      accessor: (row: VMRecord) => row.vmLabel,
+      accessor: (row: VMRecord) => row["k8s.pod.name"],
       cell: ({ value }: { value: string }) => {
-        const pvcs = pvcsByVMI.get(value) ?? [];
+        const pvcs = pvcsByPod.get(value) ?? [];
         if (pvcs.length === 0) {
           return <Text textStyle="small" style={{ color: Colors.Text.Neutral.Subdued }}>—</Text>;
         }
         return (
           <Flex gap={4} flexWrap="wrap">
-            {pvcs.map((pvc) => (
-              <span
-                key={pvc}
-                style={{
-                  fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 3,
-                  color: Colors.Text.Primary.Default,
-                  background: Colors.Background.Container.Primary.Default,
-                }}
-              >
-                {pvc}
-              </span>
-            ))}
+            {pvcs.map(({ claimName, pvcId }) => {
+              const url = pvcId
+                ? `${ENV_URL}/ui/apps/dynatrace.kubernetes/smartscape/storage/K8S_PERSISTENTVOLUMECLAIM?perspective=Utilization&sort=healthIndicators%3Adescending&detailsId=${encodeURIComponent(pvcId)}&sidebarOpen=false`
+                : null;
+              return url ? (
+                <a
+                  key={claimName}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ textDecoration: "none" }}
+                >
+                  <span
+                    style={{
+                      fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 3,
+                      color: Colors.Text.Primary.Default,
+                      background: Colors.Background.Container.Primary.Default,
+                    }}
+                  >
+                    {claimName}
+                  </span>
+                </a>
+              ) : (
+                <span
+                  key={claimName}
+                  style={{
+                    fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 3,
+                    color: Colors.Text.Primary.Default,
+                    background: Colors.Background.Container.Primary.Default,
+                  }}
+                >
+                  {claimName}
+                </span>
+              );
+            })}
           </Flex>
         );
       },
     },
   ];
 
-  if (podsResult.isLoading || logsResult.isLoading || nodesResult.isLoading || pvcResult.isLoading || guestVMsResult.isLoading) {
+  if (podsResult.isLoading || logsResult.isLoading || nodesResult.isLoading || podPvcResult.isLoading || allPvcsResult.isLoading || guestVMsResult.isLoading) {
     return (
       <Flex alignItems="center" justifyContent="center" style={{ height: 300 }}>
         <ProgressCircle />

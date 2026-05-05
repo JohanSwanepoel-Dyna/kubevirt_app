@@ -6,10 +6,12 @@
 ## overview page
 * Add total disk traffic in/out (metric)
 
+##
+* do not use CDI specific things ever
 
 ## virtual machine page
 * map the PVC binding from the pod yaml file to display in the table - link out to that pvc binding as per (making sure link is not hard coded  ) https://epj8741h.sprint.apps.dynatracelabs.com/ui/apps/dynatrace.kubernetes/smartscape/storage/K8S_PERSISTENTVOLUMECLAIM?perspective=Utilization&sort=healthIndicators%3Adescending&detailsId=K8S_PERSISTENTVOLUMECLAIM-301C53E533E35AAE&sidebarOpen=false
-* show bound PVCs (this is yaml) as persistentVolumeClaim: claimName: - possibly also as smarscape not sure, it would better if it is
+* show bound PVCs (this is yaml) as persistentVolumeClaim: claimName: if you expand the k8s.object using DPL - possibly also as smarscape not sure, it would better if it is smartcape
 
 ## storage page
 
