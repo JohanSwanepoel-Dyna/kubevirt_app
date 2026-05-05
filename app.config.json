@@ -7,8 +7,12 @@
     "description": "A starting project with routing, fetching data, and charting",
     "id": "my.kubevirt",
     "scopes": [
-      { "name": "storage:logs:read", "comment": "default template" },
-      { "name": "storage:buckets:read", "comment": "default template" }
+      { "name": "storage:logs:read", "comment": "Read VM and KubeVirt logs" },
+      { "name": "storage:buckets:read", "comment": "default template" },
+      { "name": "storage:entities:read", "comment": "Read Kubernetes entity relationships" },
+      { "name": "storage:metrics:read", "comment": "Read Kubernetes node and container metrics" },
+      { "name": "storage:smartscape:read", "comment": "Read Smartscape topology for K8s PVCs and pods" },
+      { "name": "storage:events:read", "comment": "Read Davis problems and events" }
     ]
   }
 }

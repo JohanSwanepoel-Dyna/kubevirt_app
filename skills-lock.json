@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "skills": {
+    "dt-app-dashboards": {
+      "source": "dynatrace/dynatrace-for-ai",
+      "sourceType": "github",
+      "skillPath": "skills/dt-app-dashboards/SKILL.md",
+      "computedHash": "1e97f41b49df5facd4116fc48e25654dae46dec140fe01f48a208d1951126599"
+    },
+    "dt-app-notebooks": {
+      "source": "dynatrace/dynatrace-for-ai",
+      "sourceType": "github",
+      "skillPath": "skills/dt-app-notebooks/SKILL.md",
+      "computedHash": "7da21f4a3ca825474aefd30acccbe9f05fa7ba49ad088b30154a51d9a6080f6a"
+    },
+    "dt-dql-essentials": {
+      "source": "dynatrace/dynatrace-for-ai",
+      "sourceType": "github",
+      "skillPath": "skills/dt-dql-essentials/SKILL.md",
+      "computedHash": "9633066dc0f16ab7e806c4fb0222715dd968d03866399f10872b7247110a6f11"
+    },
+    "dt-migration": {
+      "source": "dynatrace/dynatrace-for-ai",
+      "sourceType": "github",
+      "skillPath": "skills/dt-migration/SKILL.md",
+      "computedHash": "a0c91f3d0d73f21db0c6d754f65573efa91c5ba462eaa5d995c9f39ea1bfc7de"
+    },
+    "dt-obs-kubernetes": {
+      "source": "dynatrace/dynatrace-for-ai",
+      "sourceType": "github",
+      "skillPath": "skills/dt-obs-kubernetes/SKILL.md",
+      "computedHash": "5efe54f56c3c84acdd278ca0d425115939dbea8e3792549aea936c54702c5027"
+    },
+    "dt-obs-logs": {
+      "source": "dynatrace/dynatrace-for-ai",
+      "sourceType": "github",
+      "skillPath": "skills/dt-obs-logs/SKILL.md",
+      "computedHash": "9e51796ef92508ff9789762e644d241d6a0734074d5d708b9bc2585238deea5d"
+    },
+    "dt-obs-problems": {
+      "source": "dynatrace/dynatrace-for-ai",
+      "sourceType": "github",
+      "skillPath": "skills/dt-obs-problems/SKILL.md",
+      "computedHash": "c1a9c940c6354ec463b64a4a8a858a84f7d37dbf3e2e886d3ae7f3d8d876a01a"
+    },
+    "dt-obs-services": {
+      "source": "dynatrace/dynatrace-for-ai",
+      "sourceType": "github",
+      "skillPath": "skills/dt-obs-services/SKILL.md",
+      "computedHash": "263186926a128143a3f03a006f6df5dc50722c99b4d7f2e28b700c9fb01c1040"
+    }
+  }
+}
